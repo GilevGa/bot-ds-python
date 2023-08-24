@@ -1,18 +1,17 @@
 import random
 from setting import config
+from setting import info_server
 import disnake  # Подключаем библиотеку
 from disnake.ext import commands
 
 
-
 bot = commands.Bot
-bot = commands.InteractionBot(test_guilds=[1140737762379698257])
+bot = commands.InteractionBot()
 #РАЗРЕШЕНИЯ
 intents = disnake.Intents.all()
-
-
-
 bot = commands.Bot(command_prefix = config['prefix'], intents=intents)
+help_command=None,
+command_sync_flags=commands.CommandSyncFlags.all(),
 
 
 # С помощью декоратора создаём первую команду
@@ -28,11 +27,6 @@ async def on_ready():
 @bot.command()
 async def rand(ctx, *arg):
     await ctx.reply(random.randint(0, 100))
-   
-@commands.has_role('Developer')
-async def restricted_command(ctx):
-    await ctx.send('Эта команда доступна только для определенной роли.')
-
 @bot.command()
 async def bio(ctx, *, bio_text):
     await ctx.send(f"Your bio has been set to: {bio_text}")
@@ -108,7 +102,7 @@ async def unban(ctx, *, member):
             return
 
 
-@bot.command(description="Gets info about the user")
+@bot.command(description="Показывает информацию о пользователе")
 async def user_info(ctx):
     user = ctx.author
 
@@ -120,68 +114,34 @@ async def user_info(ctx):
     embed.add_field(name="STATUS", value=user.status, inline=True)
     embed.add_field(name="TOP ROLE", value=user.top_role.name, inline=True)
     await ctx.send(embed=embed)
+    
+@bot.command()
+@commands.has_role(info_server['ID_STAFF'])
+async def warn(ctx, member: disnake.Member, *, about: str):
+    if member:
+        embed = disnake.Embed(color = 0x537cda, description = f'Участник **{member.name}** получил предупреждение от **{ctx.message.author.name}** по причине:\n**```\n{about}\n```**')
+        await ctx.send(embed = embed)
+    else:
+        embed = disnake.Embed(color = 0x537cda, description = 'Ошибка в аргументах команды\nили участник не найден.', title = 'Ошибка')
+        await ctx.send(embed = embed)
+        
 #SLASH COMMAND
 
-@bot.slash_command(name='ping', description='Показывает пинг бота')
-async def ping(ctx):
-    ctx.send(f'Пинг бота сейчас: {bot.latency * 1000} ms')
-
-@bot.slash_command(description="Выводит случайное число от 0 до 100")
-async def rand(ctx, *arg):
-    await ctx.reply(random.randint(0, 100))
-
-@bot.slash_command(description="Команда находится в стадии разработки")
-async def bio(ctx, *, bio_text):
-    await ctx.send(f"КОМАНДА НЕ ДОСТУПНА")
-
-@bot.slash_command(description="Список доступных команд")
-async def helps(ctx):
-    embed =disnake.Embed(title='Список команд', description='Список доступных команд:')
-    embed.add_field(name='rand', value='Случайное число', inline=False)
-    embed.add_field(name='hello', value='Поздороваться с ботом', inline=False)
-    embed.add_field(name='Bio', value='Показать информацию о себе', inline=False)
-    embed.add_field(name='ping', value='Показывает пинг бота', inline=False)
-    await ctx.send(embed=embed)
-
-@bot.slash_command(description="Команды для модерациий")
-async def help_moderation(ctx):
-    embed =disnake.Embed(title='Список команд', description='Список доступных команд для модератора:')
-    embed.add_field(name='nicks', value='Изменяет ник участнику', inline=False)
-    embed.add_field(name='kick', value='Кикает участника', inline=False)
-    embed.add_field(name='ban', value='Банит участника', inline=False)
-    await ctx.send(embed=embed)
-
-@bot.slash_command(description="изменяет никнейм пользователя")
-async def nicks(ctx, member: disnake.Member, new_nickname: str):
-    await member.edit(nick=new_nickname)
-    await ctx.send(f'Никнейм пользователя {member.mention} изменен на {new_nickname}.')
-
-@bot.slash_command(description="Очищает указанное количество сообщений")
-@commands.has_permissions(manage_messages=True)
-async def clear(ctx, amount: int = 1000):
-    await ctx.channel.purge(limit = amount)
-    await ctx.send(f"Очищено **{amount}** сообщений")
-
-@bot.slash_command(description="Changes bots activity")
-@commands.has_permissions(administrator=True)
-async def activ(ctx, *, activity):
-    await bot.change_presence(activity=disnake.Game(name=activity))
-    await ctx.send(f"Тепеь играет в {activity}")
-
-@bot.slash_command(description="Показывает информацию о пользователе")
-async def userinfo(ctx):
-    user = ctx.author
-
-    embed=disnake.Embed(title="USER INFO", description=f"Here is the info we retrieved about {user}", colour=user.colour)
-    embed.add_field(name="NAME", value=user.name, inline=True)
-    embed.add_field(name="NICKNAME", value=user.nick, inline=True)
-    embed.add_field(name="ID", value=user.id, inline=True)
-    embed.add_field(name="STATUS", value=user.status, inline=True)
-    embed.add_field(name="TOP ROLE", value=user.top_role.name, inline=True)
-    await ctx.send(embed=embed)
+bot.load_extension("cogs.activ")
+bot.load_extension("cogs.bio")
+bot.load_extension("cogs.clear")
+bot.load_extension("cogs.help_moderation")
+bot.load_extension("cogs.helps")
+bot.load_extension("cogs.nicks")
+#bot.load_extension("cogs.ping")  # НЕИСПРАВНОСТЬ
+bot.load_extension("cogs.rand")
+bot.load_extension("cogs.userinfo")
+bot.load_extension("cogs.warn") 
 
 
+#BUTTONS
 bot.run(config['token'])
+
 
 
 
