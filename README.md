@@ -1,2 +1,2 @@
 # bot-ds-python
-попытка написать бота для discord на pythone
+попытка написать бота для discord на python
